@@ -1,0 +1,37 @@
+
+= Spring Session Couchbase
+
+Spring Session Couchbase provides a solution for Spring Session in a Couchbase data store.
+
+* Accessing a session from any environment (i.e. web, messaging infrastructure, etc)
+* In a web environment
+** Support for clustering in a vendor neutral way
+** Pluggable strategy for determining the session id
+** Easily keep the HttpSession alive when a WebSocket is active
+
+== Project Status
+
+We are in the process to merging it to the Spring Session Project, so the artifact is not published anywhere yet.
+If you need it right know, please checkout the project and install it in your environment using the command `mvn clean install`
+
+
+
+== Building Spring Session Couchbase
+
+. Run `mvn clean package`
+
+This will generate the artifact.
+
+You can also import the project into your IDE.
+
+== Code of Conduct
+This project adheres to the Contributor Covenant link:CODE_OF_CONDUCT.adoc[code of conduct].
+By participating, you  are expected to uphold this code. Please report unacceptable behavior to spring-code-of-conduct@pivotal.io.
+
+= Spring Session Project Site
+
+You can find the documentation, issue management, support, samples, and guides for using Spring Session Couchbase at http://projects.spring.io/spring-session-data-couchbase/
+
+= License
+
+Spring Session is Open Source software released under the https://www.apache.org/licenses/LICENSE-2.0.html[Apache 2.0 license].

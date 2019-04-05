@@ -1,0 +1,55 @@
+== Spring Session for Couchbase CI
+
+Spring Session for Couchbase uses Concourse as it's CI tool of choice. This provides support for:
+
+* Pipelines against the `master` and `2.0.x` branches
+* Support for pull requests
+
+=== Creating a pipeline
+
+Using the `fly` command, you can execute a series of commands to create multiple pipelines to manage everything. But
+first, some critical credentials are needed.
+
+Create a `credentials.yml` file like this:
+
+[source,yml]
+----
+github-access-token: <your Personal Access Token from github>
+slack: <your slack hook URL>
+docker-email: <your docker hub email address>
+docker-username: <your docker hub username>
+docker-password: <your docker hub password>
+artifactory-username: <your artifactory username>
+artifactory-password: <your artifactory encoded password>
+----
+
+WARNING: Do NOT check this file into source control! If you'll check, `credentials.yml` is listed in `.gitignore` to prevent tihs.
+
+With this in place, run the following `fly` commands to create pipelines:
+
+----
+% fly -t spring-team sp -p spring-session-data-couchbase -c ci/pipeline-template.yml -l credentials.yml -v branch=master -v release-branch=release
+----
+
+With this pipeline in place, you can now activate and expose it:
+
+----
+% fly -t spring-team unpause-pipeline -p spring-session-data-couchbase
+% fly -t spring-team expose-pipeline -p spring-session-data-couchbase
+----
+
+=== Making a release
+
+1. Create a new release (on the main branch).
+----
+% ci/create-release.sh <release version> <next snapshot version>
+----
+
+2. With the release tagged, push the tagged version to the release branch.
+----
+% git checkout -b release
+% git reset --hard <tag>
+% git push -f origin release
+----
+
+NOTE: You can chain the previous set of commands together using `&&`.

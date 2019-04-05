@@ -1,0 +1,90 @@
+= Spring Session - Couchbase Repositories
+Denis Rosa
+:toc:
+
+This guide describes how to use Spring Session backed by Couchbase.
+
+== Updating Dependencies
+Spring Session Couchbase artifact is not published anywhere yet (we will update this as soon as it gets merged), you need to checkout the project and run the following command:
+
+----
+mvn clean install
+mvn clean package
+----
+
+then you will be able to import it in you project:
+
+pom.xml
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.session</groupId>
+    <artifactId>spring-session-data-couchbase</artifactId>
+    <version>1.0.BUILD-SNAPSHOT</version>
+</dependency>
+----
+
+
+[[couchbase-spring-configuration]]
+== Spring Configuration
+
+After adding the required dependencies, we can create our Spring configuration.
+The Spring configuration is responsible for creating a Servlet Filter that replaces the `HttpSession` implementation with an implementation backed by Spring Session.
+
+// tag::config[]
+All you have to do is to add the following Spring Configuration:
+
+[source,java]
+----
+@SpringBootApplication
+@EnableCouchbaseHttpSession
+public class MyApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(MyApplication.class, args);
+	}
+
+}
+----
+
+<1> The `@EnableCouchbaseHttpSession` annotation creates a Spring Bean with the name of `springSessionRepositoryFilter` that implements Filter.
+The filter is what is in charge of replacing the `HttpSession` implementation to be backed by Spring Session.
+In this instance Spring Session is backed by Couchbase.
+
+The `@EnableCouchbaseHttpSession` has 4 properties:
+
+* *maxInactiveIntervalInSeconds* (default 1800 seconds) - How long the session will live before expiring
+* *typeName* (default "_type" ) - The name of the attribute that is going to be used as the type of the document
+* *typeValue* (default "_type" ) - The value of the type attribute that is going to be used to differentiate this document from others.
+* *keepStringAsLiteral* (default false) - Any attribute in the session which is a String will be saved as a document attribute instead of being serialized in a binary format. This is really useful if you need to query the user's session via N1QL (Ex: create a dashboard of what users have in their sessions). Check out link:https://github.com/couchbaselabs/session-store-java[this example] to see it working
+// end::config[]
+
+[[boot-couchbase-configuration]]
+== Configuring the Couchbase Connection
+
+Spring Boot automatically creates a Couchbase connection and connects Spring Session to a Couchbase Server. You can configure this connection by defining a `@Configuration` class which extends `org.springframework.data.couchbase.config.AbstractCouchbaseConfiguration` or via *application.properties* :
+
+.src/main/resources/application.properties
+----
+spring.couchbase.bootstrap-hosts=localhost
+spring.couchbase.bucket.name=sessionstore
+spring.couchbase.bucket.password=password
+----
+
+
+[[boot-servlet-configuration]]
+== Servlet Container Initialization
+
+Our <<boot-spring-configuration,Spring Configuration>> created a Spring Bean named `springSessionRepositoryFilter` that implements `Filter`.
+The `springSessionRepositoryFilter` bean is responsible for replacing the `HttpSession` with a custom implementation that is backed by Spring Session.
+
+In order for our `Filter` to do its magic, Spring needs to load our `Config` class.
+Last we need to ensure that our Servlet Container (i.e. Tomcat) uses our `springSessionRepositoryFilter` for every request.
+Fortunately, Spring Boot takes care of both of these steps for us.
+
+[[couchbase-sample]]
+
+== Couchbase Sample Application
+
+The https://github.com/couchbaselabs/session-store-java repo contains a fully functional example, please check the documentation in the sample to find out how to run it.
+

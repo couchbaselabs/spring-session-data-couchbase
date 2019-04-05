@@ -1,0 +1,490 @@
+---
+resource_types:
+- name: artifactory-resource
+  type: docker-image
+  source:
+    repository: springio/artifactory-resource
+    tag:        0.0.6
+
+- name: github-status
+  type: docker-image
+  source:
+    repository: dpb587/github-status-resource
+    tag:        master
+
+- name: pull-request
+  type: docker-image
+  source:
+    repository: jtarchie/pr
+    tag:        latest
+    
+- name: slack-notification
+  type: docker-image
+  source:
+    repository: nebhale/slack-notification-resource
+
+resources:
+- name: openjdk:8-jdk
+  type: docker-image
+  source:
+    repository: openjdk
+    tag:        8-jdk
+
+- name: openjdk:11-jdk
+  type: docker-image
+  source:
+    repository: openjdk
+    tag:        11-jdk
+
+- name: openjdk:13-jdk
+  type: docker-image
+  source:
+    repository: openjdk
+    tag:        13-jdk
+
+- name: spring-session-data-couchbase-github
+  type: git
+  source:
+    uri: https://github.com/spring-projects/spring-session-data-couchbase.git
+    branch: ((branch))
+
+- name: spring-session-data-couchbase-artifactory
+  type: artifactory-resource
+  source:
+    uri: https://repo.spring.io
+    username: ((artifactory-username))
+    password: ((artifactory-password))
+    build_name: spring-session-data-couchbase
+
+- name: spring-session-data-couchbase-pull-requests
+  type: pull-request
+  source:
+    access_token: ((github-access-token))
+    repo: spring-projects/spring-session-data-couchbase
+    base: ((branch))
+
+- name: spring-session-data-couchbase-release
+  type: git
+  source:
+    uri: https://github.com/spring-projects/spring-session-data-couchbase.git
+    branch: ((release-branch))
+
+- name: spring-session-data-couchbase-status
+  type: github-status
+  source:
+    access_token: ((github-access-token))
+    repository:   spring-projects/spring-session-data-couchbase
+    branch: ((branch))
+
+- name: slack
+  type: slack-notification
+  source:
+    url: ((slack))
+
+groups:
+- name: spring-session-data-couchbase
+  jobs:
+  - Test - JDK 8
+  - Test - JDK 8 and Spring.NEXT
+  - Test - JDK 11
+  - Test - JDK 11 and Spring.NEXT
+  - Test - JDK 13
+  - Test - JDK 13 and Spring.NEXT
+  - Build
+- name: pull-requests
+  jobs:
+  - spring-session-data-couchbase-pull-requests
+- name: release
+  jobs:
+  - release-to-artifactory
+  - promote-to-bintray
+  - sync-to-maven-central
+
+jobs:
+- name: Test - JDK 8
+  serial: true
+  public: true
+  plan:
+  - get: spring-session-data-couchbase-github
+    trigger: true
+  - get: openjdk:8-jdk
+    trigger: true
+  - task: test
+    file: spring-session-data-couchbase-github/ci/test.yml
+    params: { PROFILE: "convergence" }
+  <<: *slack-success
+  <<: *slack-failure
+
+
+- name: Test - JDK 8 and Spring.NEXT
+  serial: true
+  public: true
+  plan:
+  - get: spring-session-data-couchbase-github
+    trigger: true
+  - get: openjdk:8-jdk
+    trigger: true
+  - task: test
+    file: spring-session-data-couchbase-github/ci/test.yml
+    params: { PROFILE: "spring-next,convergence" }
+  <<: *slack-success
+  <<: *slack-failure
+
+- name: Test - JDK 11
+  serial: true
+  public: true
+  plan:
+  - get: spring-session-data-couchbase-github
+    trigger: true
+  - get: openjdk:11-jdk
+    trigger: true
+  - task: test
+    image: openjdk:11-jdk
+    file: spring-session-data-couchbase-github/ci/test.yml
+    params: { PROFILE: "convergence" }
+  <<: *slack-success
+  <<: *slack-failure
+
+- name: Test - JDK 11 and Spring.NEXT
+  serial: true
+  public: true
+  plan:
+  - get: spring-session-data-couchbase-github
+    trigger: true
+  - get: openjdk:11-jdk
+    trigger: true
+  - task: test
+    image: openjdk:11-jdk
+    file: spring-session-data-couchbase-github/ci/test.yml
+    params: { PROFILE: "spring-next,convergence" }
+  <<: *slack-success
+  <<: *slack-failure
+
+- name: Test - JDK 13
+  serial: true
+  public: true
+  plan:
+  - get: spring-session-data-couchbase-github
+    trigger: true
+  - get: openjdk:13-jdk
+    trigger: true
+  - task: test
+    image: openjdk:13-jdk
+    file: spring-session-data-couchbase-github/ci/test.yml
+    params: { PROFILE: "convergence" }
+  <<: *slack-success
+  <<: *slack-failure
+
+- name: Test - JDK 13 and Spring.NEXT
+  serial: true
+  public: true
+  plan:
+  - get: spring-session-data-couchbase-github
+    trigger: true
+  - get: openjdk:13-jdk
+    trigger: true
+  - task: test
+    image: openjdk:13-jdk
+    file: spring-session-data-couchbase-github/ci/test.yml
+    params: { PROFILE: "spring-next,convergence" }
+  <<: *slack-success
+  <<: *slack-failure
+
+- name: Build
+  serial: true
+  public: true
+  plan:
+  - get: spring-session-data-couchbase-github
+    trigger: true
+    passed: [
+      Test - JDK 8,
+      Test - JDK 8 and Spring.NEXT,
+      Test - JDK 11,
+      Test - JDK 11 and Spring.NEXT,
+      Test - JDK 13,
+      Test - JDK 13 and Spring.NEXT
+    ]
+  - put: spring-session-data-couchbase-status
+    params:
+      commit: spring-session-data-couchbase-github
+      state: pending
+  - task: build
+    file: spring-session-data-couchbase-github/ci/build.yml
+  - put: spring-session-data-couchbase-artifactory
+    params:
+      build_number:   ${BUILD_NAME}
+      build_uri:      ${ATC_EXTERNAL_URL}/teams/${BUILD_TEAM_NAME}/pipelines/${BUILD_PIPELINE_NAME}/jobs/${BUILD_JOB_NAME}/builds/${BUILD_NAME}
+      repo:           libs-snapshot-local
+      folder:         spring-session-data-couchbase-artifactory
+      artifact_set:
+      - include:
+        - "/**"
+        properties:
+          zip.deployed: false
+          zip.displayname: "spring-session-data-couchbase"
+          zip.name: "spring-session-data-couchbase"
+          zip.type: "docs"
+  on_failure:
+    aggregate:
+    - put: spring-session-data-couchbase-status
+      params:
+        commit: spring-session-data-couchbase-github
+        state: failure
+    - put: slack
+      params:
+        attachments:
+          - color: danger
+            fallback: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME <FAILURE>"
+            text: "Build has failed"
+            title: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME"
+            title_link: $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+  on_success:
+    aggregate:
+    - put: spring-session-data-couchbase-status
+      params:
+        commit: spring-session-data-couchbase-github
+        state: success
+    - put: slack
+      params:
+        attachments:
+          - color: good
+            fallback: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME <SUCCESS>"
+            text: "Build has succeeded!"
+            title: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME"
+            title_link: $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+
+- name: spring-session-data-couchbase-pull-requests
+  public: true
+  plan:
+  - get: spring-session-data-couchbase-github
+    resource: spring-session-data-couchbase-pull-requests
+    trigger: true
+    version: every
+  - get: openjdk:11-jdk
+  - get: openjdk:13-jdk
+  - put: spring-session-data-couchbase-pull-requests
+    params:
+      path: spring-session-data-couchbase-github
+      status: pending
+  - aggregate:
+    - task: test (JDK 8)
+      file: spring-session-data-couchbase-github/ci/test.yml
+      params: { PROFILE: "convergence" }
+    - task: test (JDK 8 and Spring.NEXT)
+      file: spring-session-data-couchbase-github/ci/test.yml
+      params: { PROFILE: "spring-next,convergence" }
+    - task: test (JDK 11)
+      image: openjdk:11-jdk
+      file: spring-session-data-couchbase-github/ci/test.yml
+      params: { PROFILE: "convergence" }
+    - task: test (JDK 11 and Spring.NEXT)
+      image: openjdk:11-jdk
+      file: spring-session-data-couchbase-github/ci/test.yml
+      params: { PROFILE: "spring-next,convergence" }
+    - task: test (JDK 13)
+      image: openjdk:13-jdk
+      file: spring-session-data-couchbase-github/ci/test.yml
+      params: { PROFILE: "convergence" }
+    - task: test (JDK 13 and Spring.NEXT)
+      image: openjdk:13-jdk
+      file: spring-session-data-couchbase-github/ci/test.yml
+      params: { PROFILE: "spring-next,convergence" }
+  on_failure:
+    aggregate:
+    - put: spring-session-data-couchbase-pull-requests
+      params:
+        path: spring-session-data-couchbase-github
+        status: failure
+    - put: slack
+      params:
+        attachments:
+          - color: danger
+            fallback: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME <FAILURE>"
+            text: "Pull request has failed"
+            title: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME"
+            title_link: $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+  on_success:
+    aggregate:
+    - put: spring-session-data-couchbase-pull-requests
+      params:
+        path: spring-session-data-couchbase-github
+        status: success
+    - put: slack
+      params:
+        attachments:
+          - color: good
+            fallback: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME <SUCCESS>"
+            text: "Pull request has succeeded!"
+            title: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME"
+            title_link: $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+
+- name: release-to-artifactory
+  serial: true
+  public: true
+  plan:
+  - get: spring-session-data-couchbase-github
+    resource: spring-session-data-couchbase-release
+    trigger: true
+  - put: spring-session-data-couchbase-status
+    params:
+      commit: spring-session-data-couchbase-github
+      state: pending
+  - task: build
+    file: spring-session-data-couchbase-github/ci/build.yml
+  - put: spring-session-data-couchbase-artifactory
+    params:
+      build_number:   ${BUILD_NAME}
+      build_uri:      ${ATC_EXTERNAL_URL}/teams/${BUILD_TEAM_NAME}/pipelines/${BUILD_PIPELINE_NAME}/jobs/${BUILD_JOB_NAME}/builds/${BUILD_NAME}
+      repo:           libs-release-local
+      folder:         spring-session-data-couchbase-artifactory
+      artifact_set:
+      - include:
+        - "/**"
+        properties:
+          zip.deployed: false
+          zip.displayname: "spring-session-data-couchbase"
+          zip.name: "spring-session-data-couchbase"
+          zip.type: "docs"
+  on_failure:
+    aggregate:
+    - put: spring-session-data-couchbase-status
+      params:
+        commit: spring-session-data-couchbase-github
+        state: failure
+    - put: slack
+      params:
+        attachments:
+          - color: danger
+            fallback: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME <FAILURE>"
+            text: "Releasing to artifactory has failed"
+            title: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME"
+            title_link: $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+  on_success:
+    aggregate:
+    - put: spring-session-data-couchbase-status
+      params:
+        commit: spring-session-data-couchbase-github
+        state: success
+    - put: slack
+      params:
+        attachments:
+          - color: good
+            fallback: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME <SUCCESS>"
+            text: "Releasing to artifactory has succeeded!"
+            title: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME"
+            title_link: $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+
+- name: promote-to-bintray
+  serial: true
+  plan:
+  - get: spring-session-data-couchbase-github
+    resource: spring-session-data-couchbase-release
+  - get: spring-session-data-couchbase-artifactory
+    trigger: true
+    passed: [release-to-artifactory]
+    params:
+      save_build_info: true
+  - task: promote-to-bintray
+    file: spring-session-data-couchbase-github/ci/promote-to-bintray.yml
+    params:
+      ARTIFACTORY_USERNAME: ((artifactory-username))
+      ARTIFACTORY_PASSWORD: ((artifactory-password))
+  on_failure:
+    aggregate:
+    - put: spring-session-data-couchbase-status
+      params:
+        commit: spring-session-data-couchbase-github
+        state: failure
+    - put: slack
+      params:
+        attachments:
+          - color: danger
+            fallback: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME <FAILURE>"
+            text: "Promoting to bintray has failed"
+            title: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME"
+            title_link: $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+  on_success:
+    aggregate:
+    - put: spring-session-data-couchbase-status
+      params:
+        commit: spring-session-data-couchbase-github
+        state: success
+    - put: slack
+      params:
+        attachments:
+          - color: good
+            fallback: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME <SUCCESS>"
+            text: "Promoting to bintray has succeeded!"
+            title: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME"
+            title_link: $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+
+- name: sync-to-maven-central
+  serial: true
+  plan:
+  - get: spring-session-data-couchbase-github
+    resource: spring-session-data-couchbase-release
+  - get: spring-session-data-couchbase-artifactory
+    trigger: true
+    passed: [promote-to-bintray]
+    params:
+      save_build_info: true
+  - task: sync-to-maven-central
+    file: spring-session-data-couchbase-github/ci/sync-to-maven-central.yml
+    params:
+      BINTRAY_USERNAME: ((bintray-username))
+      BINTRAY_API_KEY: ((bintray-api-key))
+      SONATYPE_USER_TOKEN: ((sonatype-user-token))
+      SONATYPE_PASSWORD_TOKEN: ((sonatype-user-token-password))
+      ARTIFACTORY_USERNAME: ((artifactory-username))
+      ARTIFACTORY_PASSWORD: ((artifactory-password))
+  on_failure:
+    aggregate:
+    - put: spring-session-data-couchbase-status
+      params:
+        commit: spring-session-data-couchbase-github
+        state: failure
+    - put: slack
+      params:
+        attachments:
+          - color: danger
+            fallback: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME <FAILURE>"
+            text: "Syncing to maven central has failed"
+            title: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME"
+            title_link: $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+  on_success:
+    aggregate:
+    - put: spring-session-data-couchbase-status
+      params:
+        commit: spring-session-data-couchbase-github
+        state: success
+    - put: slack
+      params:
+        attachments:
+          - color: good
+            fallback: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME <SUCCESS>"
+            text: "Syncing to maven central has succeeded!"
+            title: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME"
+            title_link: $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+
+slack-failure: &slack-failure
+  on_failure:
+    put: slack
+    params:
+      attachments:
+        - color: danger
+          fallback: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME <FAILURE>"
+          text: "Test has failed"
+          title: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME"
+          title_link: $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+
+slack-success: &slack-success
+  on_success:
+    put: slack
+    params:
+      attachments:
+        - color: good
+          fallback: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME <FAILURE>"
+          text: "Test has succeeded"
+          title: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME #$BUILD_NAME"
+          title_link: $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+

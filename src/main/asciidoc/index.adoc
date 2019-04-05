@@ -1,0 +1,101 @@
+
+= Spring Session Couchbase
+Denis Rosa
+:doctype: book
+:toc: left
+:toclevels: 4
+
+[[abstract]]
+
+Spring Session Couchbase provides an API and implementations for managing a user's session information on Couchbase.
+
+[[introduction]]
+== Introduction
+
+For an introduction to Spring Session as a whole, visit http://docs.spring.io/spring-session/docs/{spring-session-version}/reference/html5/[Spring Session] itself.
+
+[[samples]]
+== Samples and Guides (Start Here)
+
+If you are looking to get started with Spring Session, the best place to start is our Sample Applications.
+
+.Sample Applications using Spring Boot
+|===
+| Description | Guide
+
+| Demonstrates how to use Spring Session to replace the `HttpSession` with Couchbase.
+| link:boot-couchbase.html[HttpSession with Couchbase Guide]
+
+|===
+
+[[httpsession-couchbase]]
+=== HttpSession with Couchbase
+
+Using Spring Session with `HttpSession` is enabled by adding a Servlet Filter before anything that uses the `HttpSession`.
+
+This section describes how to use Couchbase to back `HttpSession` using Java based configuration.
+
+NOTE: The link:https://github.com/couchbaselabs/session-store-java/tree/master[HttpSession Couchbase Sample] provides a working sample on how to integrate Spring Session and `HttpSession` using Java configuration.
+You can read the basic steps for integration below, but you are encouraged to follow along with the detailed HttpSession Guide when integrating with your own application.
+
+include::guides/boot-couchbase.adoc[tags=config,leveloffset=+3]
+
+==== Session serialization mechanisms
+
+To be able to persist session objects in Couchbase we need to provide the serialization/deserialization mechanism.
+
+By default, Spring Session Couchbase will use `JdkCouchbaseSessionConverter`.
+
+
+===== JdkCouchbaseSessionConverter
+
+`JdkCouchbaseSessionConverter` uses standard Java serialization to persist session attributes map to Couchbase in a binary form.
+However, standard session elements like id, access time, etc are still written as a plain Couchbase attributes and can be read and queried without additional effort.
+
+There is also a constructor taking `Serializer` and `Deserializer` objects, allowing you to pass custom implementations, which is especially important when you want to use non-default classloader.
+
+[[api]]
+== API Documentation
+
+You can browse the complete link:../../api/[Javadoc] online. The key APIs are described below:
+
+[[community]]
+== Spring Session Community
+
+We are glad to consider you a part of our community.
+Please find additional information below.
+
+[[community-support]]
+=== Support
+
+You can get help by asking questions on http://stackoverflow.com/questions/tagged/spring-session[StackOverflow with the tag spring-session].
+Similarly we encourage helping others by answering questions on StackOverflow.
+
+[[community-source]]
+=== Source Code
+
+Our source code can be found on github at https://github.com/spring-projects/spring-session-data-couchbase/
+
+[[community-issues]]
+=== Issue Tracking
+
+We track issues in github issues at https://github.com/spring-projects/spring-session-data-couchbase/issues
+
+[[community-contributing]]
+=== Contributing
+
+We appreciate https://help.github.com/articles/using-pull-requests/[Pull Requests].
+
+[[community-license]]
+=== License
+
+Spring Session is Open Source software released under the https://www.apache.org/licenses/LICENSE-2.0.html[Apache 2.0 license].
+
+[[minimum-requirements]]
+== Minimum Requirements
+
+The minimum requirements for Spring Session Couchbase are:
+
+* Java 8
+* If you are running in a Servlet Container (not required), Servlet 2.5+
+* If you are using other Spring libraries (not required), the minimum required version is Spring 5.0

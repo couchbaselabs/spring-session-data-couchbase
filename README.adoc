@@ -11,7 +11,7 @@ Spring Session Couchbase provides a solution for Spring Session in a Couchbase d
 
 == Project Status
 
-We are in the process to merging it to the Spring Session Project, so the artifact is not published anywhere yet.
+We are in the process of merging it to the Spring Session Project, so the artifact is not published anywhere yet.
 If you need it right know, please checkout the project and install it in your environment using the command `mvn clean install`
 
 
@@ -67,7 +67,7 @@ The `@EnableCouchbaseHttpSession` has 4 properties:
 
 * *maxInactiveIntervalInSeconds* (default 1800 seconds) - How long the session will live before expiring
 * *typeName* (default "_type" ) - The name of the attribute that is going to be used as the type of the document
-* *typeValue* (default "_type" ) - The value of the type attribute that is going to be used to differentiate this document from others.
+* *typeValue* (default "sessions" ) - The value of the type attribute that is going to be used to differentiate this document from others.
 * *keepStringAsLiteral* (default false) - Any attribute in the session which is a String will be saved as a document attribute instead of being serialized in a binary format. This is really useful if you need to query the user's session via N1QL (Ex: create a dashboard of what users have in their sessions). Check out link:https://github.com/couchbaselabs/session-store-java[this example] to see it working
 // end::config[]
 

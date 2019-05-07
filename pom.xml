@@ -11,7 +11,7 @@
     </parent>
 
 
-    <groupId>com.couchbaselabs</groupId>
+    <groupId>io.github.couchbaselabs</groupId>
     <artifactId>spring-session-data-couchbase</artifactId>
     <version>1.0.BUILD-SNAPSHOT</version>
 

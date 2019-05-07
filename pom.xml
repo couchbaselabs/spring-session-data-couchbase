@@ -11,7 +11,7 @@
     </parent>
 
 
-    <groupId>org.springframework.session</groupId>
+    <groupId>com.couchbaselabs</groupId>
     <artifactId>spring-session-data-couchbase</artifactId>
     <version>1.0.BUILD-SNAPSHOT</version>
 

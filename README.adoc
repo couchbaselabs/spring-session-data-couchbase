@@ -9,31 +9,19 @@ Spring Session Couchbase provides a solution for Spring Session in a Couchbase d
 ** Pluggable strategy for determining the session id
 ** Easily keep the HttpSession alive when a WebSocket is active
 
-== Project Status
 
-We are in the process of merging it to the Spring Session Project, so the artifact is not published anywhere yet.
-If you need it right know, please checkout the project and install it in your environment using the command `mvn clean install`
+== Import Spring Session Couchbase
 
-
-
-== Building Spring Session Couchbase
-
-. Run `mvn clean package`
-
-This will generate the artifact.
-
-You can also import the project into your IDE.
-
-then you will be able to import it in you project:
-
+Simply add to your pom.xml the following dependency
 pom.xml
 [source,xml]
 ----
 <dependency>
-    <groupId>org.springframework.session</groupId>
-    <artifactId>spring-session-data-couchbase</artifactId>
-    <version>1.0.BUILD-SNAPSHOT</version>
+	<groupId>io.github.couchbaselabs</groupId>
+	<artifactId>spring-session-data-couchbase</artifactId>
+	<version>1.1</version>
 </dependency>
+
 ----
 
 

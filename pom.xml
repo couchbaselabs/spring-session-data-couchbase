@@ -14,6 +14,8 @@
     <artifactId>spring-session-data-couchbase</artifactId>
     <version>1.1.1-SNAPSHOT</version>
 
+    
+
     <name>Spring Session Couchbase</name>
     <url>https://github.com/couchbaselabs/spring-session-data-couchbase</url>
     <description>

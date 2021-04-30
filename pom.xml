@@ -93,7 +93,7 @@
         <couchbase.version>3.1.5.RELEASE</couchbase.version>
         <mockito.version>2.25.1</mockito.version>
         <reactor.version>Californium-SR5</reactor.version>
-        <spring.version>5.2.4.RELEASE</spring.version>
+        <spring.version>5.2.9.RELEASE</spring.version>
         <spring-data.version>Moore-M2</spring-data.version>
         <spring-security.version>5.1.4.RELEASE</spring-security.version>
         <spring-session.version>2.2.2.RELEASE</spring-session.version>
